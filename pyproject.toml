@@ -1,0 +1,14 @@
+[project]
+name = "flights"
+version = "0.1.0"
+description = "cs577 project - aviation planned maintenance interval predictions"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "dask[dataframe]>=2025.10.0",
+]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.0.1",
+]
