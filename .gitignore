@@ -10,7 +10,8 @@ wheels/
 .venv
 
 # data
-data/*
+data/2days/
+data/all_flights/
 
 # uv
 .python-version
