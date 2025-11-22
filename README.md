@@ -7,9 +7,14 @@ Planned maintenance interval prediction
 - Using uv: `uv sync`
 
 - Using pip: 
+
     - `python -m venv .venv`
     - `source .venv/bin/activate`
     - `python -m pip install -e .`
+
+- Alternatively, create a venv and install from `requirements.txt`
+
+  - `python -m pip install -r requirements.txt`
 
 ### Data
 
@@ -17,13 +22,10 @@ Download NGAFID dataset from [kaggle](https://www.kaggle.com/datasets/hooong/avi
 
 Unzip to `data/` - rename archive to data if needed
 
-Download `BRAF.xls` to `data/` from [spare-part-demand-forecasting](https://github.com/KhueNguyenTK/Spare-Part-Demand-Forecasting/blob/main/All%20Data%20sets/BRAF.xls)
-
 Structure of `data/`:
 
 ```
 data/
-  BRAF.xls
   2days/2days/
     flight_data.pkl
     flight_header.csv
@@ -32,4 +34,7 @@ data/
     flight_header.csv
     one_parq/
       ...
+    corr.parquet
+    pct_nan.parquet
+    prices.csv
 ```
