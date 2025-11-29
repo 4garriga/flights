@@ -31,3 +31,11 @@ def get_flight_df(ALL_FLIGHTS_DIR, flight_id: int) -> pd.DataFrame:
     )
     flights_df = flights_df.rename_axis("flight_id")
     return flights_df.sort_values(by="timestep").compute()
+
+def get_combined_df():
+    # Dataset
+    PROJECT_DIR = Path.cwd().parent
+
+    parq_path = PROJECT_DIR / "data" / "combined_stats.parquet"
+    df = pd.read_parquet(parq_path)
+    return PROJECT_DIR,df
