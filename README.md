@@ -2,6 +2,9 @@
 
 Planned maintenance interval prediction
 
+Given aircraft sensor recordings and unplanned maintenance logs, train a model that estimates the probability a flight requires maintenance. By analyzing part failure frequency and replacement costs, we aim to focus on the highest impact maintenance labels, evaluated on the cost of replacement. Ideally, this model informs decisions on scheduling maintenance that reduces maintenance costs while increasing reliability and safety
+
+
 ### Environment 
 
 - Using uv: `uv sync`
@@ -26,10 +29,6 @@ Structure of `data/`:
 
 ```
 data/
-  2days/2days/
-    flight_data.pkl
-    flight_header.csv
-    stats.csv
   all_flights/all_flights/
     flight_header.csv
     one_parq/
