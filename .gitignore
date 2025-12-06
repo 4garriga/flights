@@ -15,3 +15,4 @@ data/all_flights/
 
 # uv
 .python-version
+/data/flights
