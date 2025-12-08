@@ -85,8 +85,6 @@ def split_Train_Test(test_size=0.2, random_state=33):
     y_train.to_sql("y_train", conn, if_exists="replace", index=False)
     y_test.to_sql("y_test", conn, if_exists="replace", index=False)
     
-    
-
 
 
 all_features = [
