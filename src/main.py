@@ -1,33 +1,30 @@
-from pathlib import Path
-import pandas as pd
-import dask.dataframe as dd
-import numpy as np
-from sklearn.model_selection import train_test_split
 import json
 import sqlite3
+from pathlib import Path
 
-def getPaths():
-    # Project, csv paths
-    PROJECT_DIR = Path.cwd().parent
-    ALL_FLIGHTS_DIR = PROJECT_DIR / "data" / "all_flights" / "all_flights"
+import dask.dataframe as dd
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
 
-    assert ALL_FLIGHTS_DIR.exists()
+PROJECT_DIR = Path.cwd().parent
+ALL_FLIGHTS_DIR = PROJECT_DIR / "data" / "all_flights" / "all_flights"
 
-    return PROJECT_DIR, ALL_FLIGHTS_DIR
 
-
-def loadFlightHeader(ALL_FLIGHTS_DIR):
+def get_flight_header_df():
+    """Returns flight header df with flight info"""
     # Path to all_flights flight_header.csv
     flight_header_path = ALL_FLIGHTS_DIR / "flight_header.csv"
     assert flight_header_path.exists()
 
     flight_header_df = pd.read_csv(flight_header_path, index_col="Master Index")
     flight_header_df.index.name = "flight_id"
-    
+
     return flight_header_df
 
-def get_flight_df(ALL_FLIGHTS_DIR, flight_id: int) -> pd.DataFrame:
-    """Returns flight data pd.DataFrame for specified flight"""
+
+def get_flight_df(flight_id: int) -> pd.DataFrame:
+    """Returns flight data (time-series) pd.DataFrame for specified flight"""
     one_parq_path = ALL_FLIGHTS_DIR / "one_parq"
     flights_df = dd.read_parquet(
         one_parq_path, filters=[("Master Index", "==", flight_id)]
@@ -35,7 +32,17 @@ def get_flight_df(ALL_FLIGHTS_DIR, flight_id: int) -> pd.DataFrame:
     flights_df = flights_df.rename_axis("flight_id")
     return flights_df.sort_values(by="timestep").compute()
 
-def add_cluster_column(PROJECT_DIR, df):
+
+def get_combined_df():
+    """Returns combined stats/feature engineer df"""
+    parq_path = PROJECT_DIR / "data" / "combined_stats.parquet"
+    assert parq_path.exists()
+
+    return pd.read_parquet(parq_path)
+
+
+def _add_cluster_column(df):
+    """Adds cluster column to df"""
     # add cluster (target) column
     json_path = PROJECT_DIR / "data" / "label_cluster_map.json"
     assert json_path.exists()
@@ -45,46 +52,6 @@ def add_cluster_column(PROJECT_DIR, df):
 
     df["cluster"] = df["label"].map(label_cluster_map)
     return df
-
-def get_combined_df():
-    PROJECT_DIR = Path.cwd().parent
-
-    parq_path = PROJECT_DIR / "data" / "combined_stats.parquet"
-    df = pd.read_parquet(parq_path)
-    return PROJECT_DIR,df
-
-def split_Train_Test(test_size=0.2, random_state=33):
-    PROJECT_DIR,df = get_combined_df()
-
-    df = add_cluster_column(PROJECT_DIR, df)
-    df["target"] = df["before_after"].map({"before": 1, "after": 0})
-
-    # Split into X, y
-    X_all = df[all_features]
-    y_all = df[["target", "cluster"]]
-
-    # Remove rows with any NaN values
-    X_all.replace([np.inf, -np.inf], np.nan, inplace=True)
-    nan_mask = ~X_all.isna().any(axis=1)
-    X = X_all[nan_mask]
-    y = y_all[nan_mask]
-
-    # Check for NaN, inf
-    assert not X.isna().any().any()
-    assert not np.isinf(X.select_dtypes(include=[np.number])).any().any()
-
-    # Train-Test Split
-    test_size = 0.20
-
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=test_size, random_state=random_state)
-    
-    conn = sqlite3.connect(f"{PROJECT_DIR}/data/TrainTestSplitData.db")
-    X_train.to_sql("X_train", conn, if_exists="replace", index=False)
-    X_test.to_sql("X_test", conn, if_exists="replace", index=False)
-    y_train.to_sql("y_train", conn, if_exists="replace", index=False)
-    y_test.to_sql("y_test", conn, if_exists="replace", index=False)
-    
 
 
 all_features = [
@@ -300,3 +267,35 @@ all_features = [
     "volt2_p75",
     "volt2_std",
 ]
+
+
+def split_train_test(test_size=0.2, random_state=33):
+    df = get_combined_df()
+
+    df = _add_cluster_column(df)
+    df["target"] = df["before_after"].map({"before": 1, "after": 0})
+
+    # Split into X, y
+    X_all = df[all_features]
+    y_all = df[["target", "cluster"]]
+
+    # Remove rows with any NaN values
+    X_all.replace([np.inf, -np.inf], np.nan, inplace=True)
+    nan_mask = ~X_all.isna().any(axis=1)
+    X = X_all[nan_mask]
+    y = y_all[nan_mask]
+
+    # Check for NaN, inf
+    assert not X.isna().any().any()
+    assert not np.isinf(X.select_dtypes(include=[np.number])).any().any()
+
+    # Train-Test Split
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=test_size, random_state=random_state
+    )
+
+    conn = sqlite3.connect(f"{PROJECT_DIR}/data/TrainTestSplitData.db")
+    X_train.to_sql("X_train", conn, if_exists="replace", index=False)
+    X_test.to_sql("X_test", conn, if_exists="replace", index=False)
+    y_train.to_sql("y_train", conn, if_exists="replace", index=False)
+    y_test.to_sql("y_test", conn, if_exists="replace", index=False)
